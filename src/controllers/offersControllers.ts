@@ -184,7 +184,7 @@ module.exports = {
     const client = await OffersDb.connect()
     try {
       const offers =
-        await client.query(`select s.sponsor_name,s.sponsor_url, ot.offer_name as offer_type, s_o.offer_title , s_o.tagline    from sponsor_offers s_o
+        await client.query(`select s.sponsor_name,s.sponsor_url, ot.offer_name as offer_type, s_o.offer_title , s_o.tagline ,s_o.id   from sponsor_offers s_o
 join sponsors s on sponsor_id = s.id
 join offer_type ot on s_o.offer_type_id = ot.id
 where s_o.is_active = true`)
@@ -192,6 +192,36 @@ where s_o.is_active = true`)
       return res.status(200).json({ data: offers.rows })
     } catch (error) {
       console.error("Error fetching offers:", error)
+      return res.status(500).json({ error: "Internal server error" })
+    } finally {
+      client.release()
+    }
+  },
+  getOfferById: async (req: any, res: any) => {
+    const { offerId } = req.params
+    console.log("Received request to fetch offer with ID:", offerId)
+    const client = await OffersDb.connect()
+    try {
+      const offerResult = await client.query(
+        `
+        select s.sponsor_name,s.sponsor_url, ot.offer_name as offer_type, s_o.*    from sponsor_offers s_o
+join sponsors s on sponsor_id = s.id
+join offer_type ot on s_o.offer_type_id = ot.id
+where s_o.id = $1
+        `,
+        [offerId],
+      )
+
+      if (offerResult.rows.length === 0) {
+        return res.status(404).json({ error: "Offer not found" })
+      }
+
+      const offer = offerResult.rows[0]
+      delete offer.contact_email
+
+      return res.status(200).json({ data: offer })
+    } catch (error) {
+      console.error("Error fetching offer:", error)
       return res.status(500).json({ error: "Internal server error" })
     } finally {
       client.release()
