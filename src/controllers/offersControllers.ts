@@ -203,8 +203,7 @@ where s_o.is_active = true`)
     const client = await OffersDb.connect()
     try {
       const offerResult = await client.query(
-        `
-        select s.sponsor_name,s.sponsor_url, ot.offer_name as offer_type, s_o.*    from sponsor_offers s_o
+        `select s.sponsor_name,s.sponsor_url,s.logo_url , ot.offer_name as offer_type, s_o.*    from sponsor_offers s_o
 join sponsors s on sponsor_id = s.id
 join offer_type ot on s_o.offer_type_id = ot.id
 where s_o.id = $1
