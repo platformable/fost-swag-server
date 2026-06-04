@@ -1,9 +1,9 @@
-const { v4: uuidv4 } = require("uuid")
 const OffersDb = require("../DbConnectDataset")
 
 module.exports = {
   // POST /api/sponsors/:sponsorId/offers
   generateOffer: async (req: any, res: any) => {
+    const { v4: uuidv4 } = await import("uuid")
     console.log("Received request to create offer with body:", req.body)
     const { sponsorId } = req.params
     const {
