@@ -1,10 +1,11 @@
 const OffersDb = require("../DbConnectDataset")
+const emailQueue = require("../lib/emailQueue")
 
 module.exports = {
   // POST /api/sponsors/:sponsorId/offers
   generateOffer: async (req: any, res: any) => {
     const { v4: uuidv4 } = await import("uuid")
-    console.log("Received request to create offer with body:", req.body)
+
     const { sponsorId } = req.params
     const {
       // Core
@@ -199,14 +200,23 @@ where s_o.is_active = true`)
   },
   getOfferById: async (req: any, res: any) => {
     const { offerId } = req.params
-    console.log("Received request to fetch offer with ID:", offerId)
+
     const client = await OffersDb.connect()
     try {
       const offerResult = await client.query(
-        `select s.sponsor_name,s.sponsor_url,s.logo_url , ot.offer_name as offer_type, s_o.*    from sponsor_offers s_o
-join sponsors s on sponsor_id = s.id
-join offer_type ot on s_o.offer_type_id = ot.id
-where s_o.id = $1
+        `SELECT 
+  s.sponsor_name,
+  s.logo_url,
+  ot.offer_name AS offer_type,
+  s_o.*,
+  ARRAY_AGG(c.category_name) AS categories
+FROM sponsor_offers s_o
+JOIN sponsors s ON s_o.sponsor_id = s.id
+JOIN offer_type ot ON s_o.offer_type_id = ot.id
+LEFT JOIN offer_categories oc ON s_o.id = oc.offer_id
+LEFT JOIN category c ON oc.category_id = c.id
+WHERE s_o.id = $1
+GROUP BY s.sponsor_name, s.logo_url, ot.offer_name, s_o.id;
         `,
         [offerId],
       )
@@ -216,7 +226,7 @@ where s_o.id = $1
       }
 
       const offer = offerResult.rows[0]
-      delete offer.contact_email
+      //delete offer.contact_email
 
       return res.status(200).json({ data: offer })
     } catch (error) {
@@ -225,5 +235,31 @@ where s_o.id = $1
     } finally {
       client.release()
     }
+  },
+  claimOffer: async (req: any, res: any) => {
+    console.log("Received request to claim offer with body:", req.body)
+    const { email, sponsor_name, offer_title, contact_email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ error: "Missing email or offerId" })
+    }
+
+    // Enqueue client confirmation email
+    emailQueue.enqueue("client-claim", email, {
+      offerTitle: offer_title,
+      sponsorName: sponsor_name,
+    })
+
+    // Enqueue sponsor notification email
+    // contact_email should ideally come from the offer's sponsor data
+    emailQueue.enqueue("sponsor-claim", contact_email, {
+      offerTitle: offer_title,
+      sponsorName: sponsor_name,
+      email,
+      claimedAt: new Date().toLocaleString(),
+    })
+
+    console.log(`Enqueued confirmation and sponsor emails for ${email}`)
+    return res.status(200).json({ message: "Offer claimed successfully" })
   },
 }
