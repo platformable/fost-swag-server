@@ -238,10 +238,27 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
   },
   claimOffer: async (req: any, res: any) => {
     console.log("Received request to claim offer with body:", req.body)
-    const { email, sponsor_name, offer_title, contact_email } = req.body
+    const { email, sponsor_name, offer_title, contact_email, offer_id } =
+      req.body
 
     if (!email) {
       return res.status(400).json({ error: "Missing email or offerId" })
+    }
+    // Persist claim record before sending emails
+    const client = await OffersDb.connect()
+    try {
+      const insertSql = `INSERT INTO offer_leads (offer_id, offer_title, sponsor_name) VALUES ($1, $2, $3) RETURNING id`
+      const insertRes = await client.query(insertSql, [
+        offer_id,
+        offer_title,
+        sponsor_name,
+      ])
+      console.log("Inserted offer_claims id:", insertRes.rows[0]?.id)
+    } catch (err) {
+      console.error("Failed to persist claim record:", err)
+      return res.status(500).json({ error: "Failed to save claim record" })
+    } finally {
+      client.release()
     }
 
     // Enqueue client confirmation email
@@ -251,7 +268,7 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
     })
 
     // Enqueue sponsor notification email
-    // contact_email should ideally come from the offer's sponsor data
+
     emailQueue.enqueue("sponsor-claim", contact_email, {
       offerTitle: offer_title,
       sponsorName: sponsor_name,
