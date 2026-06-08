@@ -189,7 +189,7 @@ module.exports = {
 join sponsors s on sponsor_id = s.id
 join offer_type ot on s_o.offer_type_id = ot.id
 where s_o.is_active = true`)
-      console.log("Fetched offers:", offers.rows)
+
       return res.status(200).json({ data: offers.rows })
     } catch (error) {
       console.error("Error fetching offers:", error)
