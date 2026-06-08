@@ -206,7 +206,7 @@ where s_o.is_active = true`)
       const offerResult = await client.query(
         `SELECT 
   s.sponsor_name,
-  s.logo_url,
+  s.logo_url,s.sponsor_url,
   ot.offer_name AS offer_type,
   s_o.*,
   ARRAY_AGG(c.category_name) AS categories
@@ -216,7 +216,7 @@ JOIN offer_type ot ON s_o.offer_type_id = ot.id
 LEFT JOIN offer_categories oc ON s_o.id = oc.offer_id
 LEFT JOIN category c ON oc.category_id = c.id
 WHERE s_o.id = $1
-GROUP BY s.sponsor_name, s.logo_url, ot.offer_name, s_o.id;
+GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
         `,
         [offerId],
       )
