@@ -202,7 +202,8 @@ module.exports = {
           s.sponsor_name ILIKE $1 OR 
           s_o.offer_title ILIKE $1 OR 
           s_o.tagline ILIKE $1 OR
-          ot.offer_name ILIKE $1
+          ot.offer_name ILIKE $1 OR
+          s_o.offer_desc ILIKE $1
         )`
       }
 
