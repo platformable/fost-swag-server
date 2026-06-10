@@ -182,15 +182,75 @@ module.exports = {
   },
   getOffers: async (req: any, res: any) => {
     console.log("Received request to fetch offers")
+
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 100
+    const search = req.query.search || ""
+    console.log(
+      `Pagination params - page: ${page}, limit: ${limit}, search: "${search}"`,
+    )
+    const offset = (page - 1) * limit
+
     const client = await OffersDb.connect()
     try {
-      const offers =
-        await client.query(`select s.sponsor_name,s.sponsor_url, ot.offer_name as offer_type, s_o.offer_title , s_o.tagline ,s_o.id   from sponsor_offers s_o
-join sponsors s on sponsor_id = s.id
-join offer_type ot on s_o.offer_type_id = ot.id
-where s_o.is_active = true`)
+      const params: any[] = []
+      let searchCondition = ""
 
-      return res.status(200).json({ data: offers.rows })
+      if (search) {
+        params.push(`%${search}%`)
+        searchCondition = `AND (
+          s.sponsor_name ILIKE $1 OR 
+          s_o.offer_title ILIKE $1 OR 
+          s_o.tagline ILIKE $1 OR
+          ot.offer_name ILIKE $1
+        )`
+      }
+
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM sponsor_offers s_o
+        JOIN sponsors s ON s_o.sponsor_id = s.id
+        JOIN offer_type ot ON s_o.offer_type_id = ot.id
+        WHERE s_o.is_active = true ${searchCondition}
+      `
+
+      const countResult = await client.query(countQuery, params)
+      const total = parseInt(countResult.rows[0].total)
+
+      const limitParamIndex = params.length + 1
+      const offsetParamIndex = params.length + 2
+      params.push(limit, offset)
+
+      const dataQuery = `
+        SELECT 
+          s.sponsor_name,
+          s.sponsor_url, 
+          ot.offer_name as offer_type, 
+          s_o.offer_title, 
+          s_o.tagline,
+          s_o.id   
+        FROM sponsor_offers s_o
+        JOIN sponsors s ON s_o.sponsor_id = s.id
+        JOIN offer_type ot ON s_o.offer_type_id = ot.id
+        WHERE s_o.is_active = true ${searchCondition}
+        ORDER BY s_o.created_at DESC
+        LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
+      `
+
+      const offers = await client.query(dataQuery, params)
+
+      const totalPages = Math.ceil(total / limit)
+
+      return res.status(200).json({
+        data: offers.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages,
+        },
+      })
     } catch (error) {
       console.error("Error fetching offers:", error)
       return res.status(500).json({ error: "Internal server error" })
