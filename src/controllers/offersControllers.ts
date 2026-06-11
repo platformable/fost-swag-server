@@ -186,8 +186,10 @@ module.exports = {
     const page = parseInt(req.query.page) || 1
     const limit = parseInt(req.query.limit) || 100
     const search = req.query.search || ""
+    const offerType = req.query.category || ""
+
     console.log(
-      `Pagination params - page: ${page}, limit: ${limit}, search: "${search}"`,
+      `Pagination params - page: ${page}, limit: ${limit}, search: "${search}", offerType: "${offerType}"`,
     )
     const offset = (page - 1) * limit
 
@@ -207,11 +209,27 @@ module.exports = {
         )`
       }
 
+      if (offerType) {
+        const types = String(offerType)
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+
+        if (types.length > 0) {
+          params.push(types)
+
+          searchCondition += ` AND category.category_name = ANY($${params.length}::text[])`
+        }
+      }
+
       const countQuery = `
-        SELECT COUNT(*) as total
+        SELECT COUNT(*) as total,
+        STRING_AGG(category.category_name, ', ') AS category_name
         FROM sponsor_offers s_o
         JOIN sponsors s ON s_o.sponsor_id = s.id
         JOIN offer_type ot ON s_o.offer_type_id = ot.id
+         JOIN offer_categories oc ON s_o.id = oc.offer_id
+         JOIN category category on oc.category_id = category.id 
         WHERE s_o.is_active = true ${searchCondition}
       `
 
@@ -229,12 +247,22 @@ module.exports = {
           ot.offer_name as offer_type, 
           s_o.offer_title, 
           s_o.tagline,
-          s_o.id   
+          s_o.id,
+          STRING_AGG(category.category_name, ', ') AS category_name
         FROM sponsor_offers s_o
         JOIN sponsors s ON s_o.sponsor_id = s.id
         JOIN offer_type ot ON s_o.offer_type_id = ot.id
+         JOIN offer_categories oc ON s_o.id = oc.offer_id
+         JOIN category category on oc.category_id = category.id 
         WHERE s_o.is_active = true ${searchCondition}
-        ORDER BY s_o.created_at DESC
+        GROUP BY
+    s.sponsor_name,
+    s.sponsor_url,
+    ot.offer_name,
+    s_o.offer_title,
+    s_o.tagline,
+    s_o.id
+ORDER BY MAX(s_o.created_at) DESC
         LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
       `
 
