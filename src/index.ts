@@ -2,6 +2,7 @@ require("dotenv").config()
 import express, { Request, Response } from "express"
 import { QueryResult } from "pg"
 import { EntityTypes } from "./types/entityTypes"
+import { sendDiscordAlert } from "./notifications/notifications"
 const clientDataset = require("./DbConnectDataset")
 var cors = require("cors")
 
@@ -27,12 +28,14 @@ app.use("/api/entities", entitiesRoute)
 const offersRoutes = require("./routes/offersRoutes")
 app.use("/api/offers", offersRoutes)
 
-// app.get("/api/health", (req: Request, res: Response) => {
-//   const t1 = req.query.t1 as string | undefined
-//   const t2 = req.query.t2 as string | undefined
-//   console.log("Received /api/health", { t1, t2 })
-//   res.json({ status: "OK", t1, t2, timestamp: new Date().toISOString() })
-// })
+app.post("/api/notifications", (req: Request, res: Response) => {
+  /* const { t1, t2 } = req.body */
+  const site = { name: "Example Site", url: "https://example.com" }
+  //const error = new Error("Example error message")
+  sendDiscordAlert(site)
+  /* console.log("Received /api/notifications POST", { t1, t2 }) */
+  res.json({ status: "OK", /* t1, t2, */ timestamp: new Date().toISOString() })
+})
 
 app.get("/api/dataset", async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1
