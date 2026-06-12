@@ -1,3 +1,5 @@
+import { sendDiscordAlert } from "../notifications/notifications"
+
 const OffersDb = require("../DbConnectDataset")
 const emailQueue = require("../lib/emailQueue")
 
@@ -326,7 +328,6 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
     }
   },
   claimOffer: async (req: any, res: any) => {
-    console.log("Received request to claim offer with body:", req.body)
     const { email, sponsor_name, offer_title, contact_email, offer_id } =
       req.body
 
@@ -365,7 +366,8 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
       claimedAt: new Date().toLocaleString(),
     })
 
-    console.log(`Enqueued confirmation and sponsor emails for ${email}`)
+    await sendDiscordAlert({ name: sponsor_name, url: offer_title })
+
     return res.status(200).json({ message: "Offer claimed successfully" })
   },
 }
