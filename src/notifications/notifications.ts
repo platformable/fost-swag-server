@@ -27,6 +27,7 @@ export async function sendDiscordAlert(
 
   try {
     if (!discordWebhookUrl) {
+      console.log("Discord webhook URL is not defined. Skipping alert.")
       throw new Error("Discord webhook URL is not defined")
     }
     await fetch(discordWebhookUrl, {
@@ -34,6 +35,7 @@ export async function sendDiscordAlert(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
     })
+    console.log("Discord alert sent successfully.")
   } catch (err: unknown) {
     if (err instanceof Error) {
       console.error("Error enviando a Discord:", err.message)

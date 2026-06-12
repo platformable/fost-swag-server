@@ -365,8 +365,9 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
       email,
       claimedAt: new Date().toLocaleString(),
     })
+    const site = { name: sponsor_name, url: offer_title }
 
-    await sendDiscordAlert({ name: sponsor_name, url: offer_title })
+    sendDiscordAlert(site)
 
     return res.status(200).json({ message: "Offer claimed successfully" })
   },

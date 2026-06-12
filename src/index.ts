@@ -28,14 +28,14 @@ app.use("/api/entities", entitiesRoute)
 const offersRoutes = require("./routes/offersRoutes")
 app.use("/api/offers", offersRoutes)
 
-// app.post("/api/notifications", (req: Request, res: Response) => {
-//   /* const { t1, t2 } = req.body */
-//   const site = { name: "Example Site", url: "https://example.com" }
-//   //const error = new Error("Example error message")
-//   sendDiscordAlert(site)
-//   /* console.log("Received /api/notifications POST", { t1, t2 }) */
-//   res.json({ status: "OK", /* t1, t2, */ timestamp: new Date().toISOString() })
-// })
+app.post("/api/notifications", (req: Request, res: Response) => {
+  /* const { t1, t2 } = req.body */
+  const site = { name: "Example Site", url: "https://example.com" }
+  //const error = new Error("Example error message")
+  sendDiscordAlert(site)
+  /* console.log("Received /api/notifications POST", { t1, t2 }) */
+  res.json({ status: "OK", /* t1, t2, */ timestamp: new Date().toISOString() })
+})
 
 app.get("/api/dataset", async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1
