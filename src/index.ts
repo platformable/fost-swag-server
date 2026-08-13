@@ -30,7 +30,7 @@ app.use("/api/offers", offersRoutes)
 
 app.post("/api/notifications", (req: Request, res: Response) => {
   /* const { t1, t2 } = req.body */
-  const site = { name: "Example Site", url: "https://example.com" }
+  const site = { name: "", url: "", email: "" }
   //const error = new Error("Example error message")
   sendDiscordAlert(site)
   /* console.log("Received /api/notifications POST", { t1, t2 }) */

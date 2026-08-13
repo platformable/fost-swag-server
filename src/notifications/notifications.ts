@@ -7,7 +7,7 @@ const color: Record<string, number> = {
 }
 
 export async function sendDiscordAlert(
-  site: { name: string; url: string },
+  site: { name: string; url: string; email: string },
   error?: Error,
 ) {
   const message = {
@@ -20,6 +20,7 @@ export async function sendDiscordAlert(
           { name: "URL", value: site.url },
           //{ name: "Error", value: error?.message },
           { name: "Timestamp", value: new Date().toISOString() },
+          { name: "Email", value: site.email },
         ],
       },
     ],
