@@ -365,7 +365,7 @@ GROUP BY s.sponsor_name,s.sponsor_url, s.logo_url, ot.offer_name, s_o.id;
       email,
       claimedAt: new Date().toLocaleString(),
     })
-    const site = { name: sponsor_name, url: offer_title }
+    const site = { name: sponsor_name, url: offer_title, email: email }
 
     sendDiscordAlert(site)
 
